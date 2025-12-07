@@ -32,18 +32,26 @@ def cleanup_test_data():
 @pytest.fixture(scope="session")
 def fetch_available_components():
     """Фикстура для получения доступных компонентов.
-    Возвращает список ID компонентов или пустой список в случае ошибки."""
+    Гарантирует наличие компонентов для тестов, иначе падает с понятной ошибкой."""
     try:
         response = requests.get(ServiceEndpoints.COMPONENTS_LIST)
-        response.raise_for_status()  # Вызовет исключение при коде состояния >= 400
+        response.raise_for_status()
         data = response.json()
         
-        if data.get("success") and "data" in data:
-            return [component["_id"] for component in data["data"][:2]]
-        else:
-            # Если структура ответа не соответствует ожидаемой
-            return []
-    except (requests.RequestException, ValueError, KeyError) as e:
-        # Логируем ошибку, но не падаем
-        print(f"Warning: Could not fetch components from {ServiceEndpoints.COMPONENTS_LIST}: {e}")
-        return []
+        if not data.get("success"):
+            pytest.fail(f"API вернул неуспешный ответ: {data.get('message', 'Unknown error')}")
+            
+        if "data" not in data or not data["data"]:
+            pytest.fail("API вернул пустой список компонентов")
+            
+        component_ids = [component["_id"] for component in data["data"][:2]]
+        
+        if not component_ids:
+            pytest.fail("Не удалось извлечь ID компонентов из ответа")
+            
+        return component_ids
+        
+    except requests.RequestException as e:
+        pytest.fail(f"Не удалось подключиться к API для получения компонентов: {e}")
+    except (ValueError, KeyError) as e:
+        pytest.fail(f"Некорректный формат ответа от API: {e}")
