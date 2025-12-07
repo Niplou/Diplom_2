@@ -2,12 +2,7 @@ import pytest
 import allure
 from api.service_client import ServiceClient
 from api.data import ServiceResponse, TestConstants
-
-
-def obtain_client_token(client_data):
-    """Получение токена аутентификации для клиента"""
-    auth_response = ServiceClient.authenticate_client(client_data["email"], client_data["password"])
-    return auth_response.json()["accessToken"]
+from api.helpers import obtain_client_token  # Импорт из нового модуля
 
 
 @allure.feature('Создание транзакции')
